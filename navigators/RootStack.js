@@ -5,8 +5,9 @@ import React from 'react';
 import Signup from '../screens/Signup';
 import Login from '../screens/Login';
 import Welcome from '../screens/Welcome';
-
 import { Colors } from '../components/styles';
+
+
 
 const { primary, tertiary } = Colors;
 
@@ -14,6 +15,7 @@ const Stack = createNativeStackNavigator();
 
 export default RootStack = () => {
     return (
+
         <NavigationContainer>
             <Stack.Navigator
                 screenOptions={{
@@ -29,9 +31,11 @@ export default RootStack = () => {
                 }}
                 initialRouteName="Login"
             >
+
+                <Stack.Screen name="Welcome" component={Welcome} />
                 <Stack.Screen name="Login" component={Login} />
                 <Stack.Screen name="Signup" component={Signup} />
-                <Stack.Screen name="Welcome" component={Welcome} />
+
             </Stack.Navigator>
         </NavigationContainer>
     )

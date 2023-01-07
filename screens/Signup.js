@@ -4,6 +4,9 @@ import { Formik } from 'formik';
 import React, { useState } from 'react';
 import { Octicons, Ionicons } from '@expo/vector-icons';
 import { View, TouchableOpacity } from 'react-native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Spinner from 'react-native-loading-spinner-overlay';
 import {
     StyledContainer,
     InnerContainer,
@@ -25,6 +28,7 @@ import {
     TextLinkContent
 } from '../components/styles';
 
+
 // destructing the colors
 const { brand, darkLight, primary } = Colors;
 
@@ -38,9 +42,10 @@ export default function Signup({ navigation }) {
     const [hidePassword, setHidePassword] = useState(true);
     const [show, setShow] = useState(false);
     const [date, setDate] = useState(new Date(2000, 0, 1));
+    const [loading, setLoading] = useState(false);
 
     // date to pick
-    const [dob, setDob] = useState();
+    const [dob, setDob] = useState('');
     const onChange = (event, selectedDate) => {
         const currentDate = selectedDate || date;
         setShow(false);
@@ -49,10 +54,53 @@ export default function Signup({ navigation }) {
     }
 
     // show the date picker
-    const showDatePicker = (currentMode) => {
+    const showDatePicker = () => {
         setShow(true);
 
     }
+
+    const submitHandle = async (values) => {
+        console.log(values);
+        const url = 'https://react-native-server.onrender.com/api/v1/users/register';
+        const { email, password, fullName, confirmPassword, dateOfBirth } = values;
+        const lowerCaseEmail = email.toLowerCase();
+        const config = {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }
+        const data = {
+            email: lowerCaseEmail,
+            password: password,
+            dateOfBirth: dateOfBirth,
+            name: fullName
+        }
+        setLoading(true);
+        if (password != confirmPassword) {
+            alert('Password not matched!')
+        }
+        else if (email == '' || password == '' || dob == '' || fullName == '') {
+            alert('Any input cannot be empty!');
+        } else {
+            try {
+                await axios
+                    .post(url, data, config)
+                    .then((response) => {
+                        const data = response.data;
+                        AsyncStorage.setItem('userInfo', JSON.stringify(data));
+                        navigation.navigate('Welcome', { ...data });
+                        alert('Registration successful!');
+                        setTimeout(() => {
+                            setLoading(false);
+                        }, 3000);
+                    })
+
+            } catch (error) {
+                alert(error);
+            }
+        }
+    }
+
     return (
         <KeyboardAvoidingWrapper>
             <StyledContainer>
@@ -61,12 +109,19 @@ export default function Signup({ navigation }) {
 
                     <PageTitle>Farming Consultation</PageTitle>
                     <SubTitle>Account Signup</SubTitle>
-
+                    <Spinner
+                        //visibility of Overlay Loading Spinner
+                        visible={loading}
+                        //Text with the Spinner
+                        textContent={'Creating account...'}
+                        //Text style of the Spinner Text
+                        textStyle={{ styles: { color: '#FFF' } }}
+                    />
                     {show && (
                         <DateTimePicker
                             testID="dateTimePicker"
                             value={date}
-                            mode="date"
+                            mode={'date'}
                             is24Hour={true}
                             onChange={onChange}
                         />
@@ -75,8 +130,8 @@ export default function Signup({ navigation }) {
                     <Formik
                         initialValues={{ fullName: '', email: '', password: '', confirmPassword: '', dateOfBirth: '' }}
                         onSubmit={(values) => {
-                            console.log(values);
-                            navigation.navigate('Welcome');
+                            values = { ...values, dateOfBirth: dob };
+                            submitHandle(values);
                         }}
                     >
                         {
@@ -106,8 +161,7 @@ export default function Signup({ navigation }) {
                                         value={values.email}
                                         keyboardType="email-address"
                                     />
-                                    <MyTextInput
-                                        label="Date of Birth"
+                                    <MyTextInput label="Date of Birth"
                                         icon="calendar"
                                         placeholder="YYYY - MM - DD"
                                         placeholderTextColor={darkLight}
@@ -116,8 +170,7 @@ export default function Signup({ navigation }) {
                                         value={dob ? dob.toDateString() : values.dateOfBirth}
                                         isDate={true}
                                         editable={false}
-                                        showDatePicker={showDatePicker}
-                                    />
+                                        showDatePicker={showDatePicker} />
                                     <MyTextInput
                                         label="Password"
                                         icon="lock"
@@ -144,7 +197,7 @@ export default function Signup({ navigation }) {
                                         hidePassword={hidePassword}
                                         setHidePassword={setHidePassword}
                                     />
-                                    <MsgBox>...</MsgBox>
+
                                     <StyledButton onPress={handleSubmit}>
                                         <ButtonText>Sign up</ButtonText>
                                     </StyledButton>
